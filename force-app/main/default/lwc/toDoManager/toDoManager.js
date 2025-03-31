@@ -1,11 +1,18 @@
 import { LightningElement, track } from 'lwc';
+import addTodo from '@salesforce/apex/ToDoController.addTodo';
+import getCurrentTodos from '@salesforce/apex/ToDoController.getCurrentTodos';
+
 
 export default class ToDoManager extends LightningElement {
     @track time;
     @track greeting;
 
+    @track todos = [];
+
     connectedCallback(){
         this.getTime();
+        this.fetchToDos();
+        //this.populateToDos();
 
         setInterval(() => {
             this.getTime();
@@ -42,5 +49,79 @@ export default class ToDoManager extends LightningElement {
         }else{
             this.greeting = "Good Evening";
         }
+    }
+
+    addToDoHandler(){
+        const inputBox = this.template.querySelector("lightning-input");
+
+        const todo = {
+            todoName: inputBox.value,
+            done: false,
+        };
+
+        addTodo({payload : JSON.stringify(todo)})
+        .then(response => {
+            console.log('Item inserted successfully');
+            this.fetchToDos();
+        })
+        .catch(error => {
+            console.error('Error in inserting toDo item '+ error);
+        });
+
+        //this.todos.push(todo);
+        inputBox.value = "";
+    }
+
+    fetchToDos(){
+        getCurrentTodos()
+        .then(response => {
+            if(response){
+                console.log('Fetched todos: ', this.todos);
+                this.todos = response;
+            }
+        })
+        .catch(error => {
+            console.error('Error in fetching todos: ', error);
+        });
+    }
+
+    updateHandler(){
+        this.fetchToDos();
+    }
+
+    deleteHandler(){
+        this.fetchToDos();
+    }
+
+    get upcomingTasks(){
+        return this.todos && this.todos.length ? this.todos.filter(todo => !todo.done) : [];
+    }
+
+    get completedTasks(){
+        return this.todos && this.todos.length ? this.todos.filter(todo => todo.done) : [];
+    }
+
+    populateToDos(){
+        const todos = [
+            {
+                todoId: 0,
+                todoName: "Learn LWC",
+                 done: false,
+                 todoDate: new Date()
+            },
+            {
+                todoId: 1,
+                todoName: "Learn Apex",
+                 done: false,
+                 todoDate: new Date()
+            },
+            {
+                todoId: 2,
+                todoName: "Learn Aura",
+                 done: true,
+                 todoDate: new Date()
+            }
+        ];
+        this.todos = todos;
     }
 }
